@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import {
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { useUser } from '../../../context/UserContext';
@@ -35,17 +33,10 @@ export default function FillInfoScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: TOP_PADDING }}>
       <View className="flex-1">
-      <View className="flex-row items-center align-center justify-between mt-6 px-4 py-3">
-        <Pressable
-          onPress={() => navigation.goBack()}
-          className="h-10 w-10 items-center justify-center active:opacity-70"
-        >
-          <Ionicons name="chevron-back" size={28} color="#1f2937" />
-        </Pressable>
+      <View className="items-center mt-6 px-4 py-3">
         <Text className="font-hindi text-heading font-bold text-gray-900">
           अपनी जानकारी भरें
         </Text>
-        <View className="h-10 w-10" />
       </View>
 
       <ScrollView

@@ -38,6 +38,7 @@ export async function performGoogleSignIn() {
   console.log('[googleSignIn] Opening account picker, webClientId:', config.google?.webClientId ? '***set***' : 'MISSING');
   let signInResult;
   try {
+    await GoogleSignin.signOut();
     signInResult = await GoogleSignin.signIn();
     console.log('[googleSignIn] signIn result:', signInResult ? 'got result' : 'null (cancelled)');
   } catch (nativeError) {
