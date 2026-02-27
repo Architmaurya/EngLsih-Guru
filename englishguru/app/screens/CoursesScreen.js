@@ -163,7 +163,7 @@ export default function CoursesScreen() {
               नमस्ते, {userName} 🌸
             </Text>
             <Text className="mt-1 font-openSans text-body text-gray-600">
-              Welcome , {userName}
+              Welcome,{userName}
             </Text>
           </View>
           <View

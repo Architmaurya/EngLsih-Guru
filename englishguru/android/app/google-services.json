@@ -1,0 +1,79 @@
+{
+  "project_info": {
+    "project_number": "601890245278",
+    "project_id": "learning-app-119d3",
+    "storage_bucket": "learning-app-119d3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:601890245278:android:dd4c7ecb8223cef75c498f",
+        "android_client_info": {
+          "package_name": "com.gumbo.english"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "601890245278-4vpropmgeaoicglgs8qjg72keia9l7cv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gumbo.english",
+            "certificate_hash": "9249a9032febe6d86b6fe0de15533361222010ed"
+          }
+        },
+        {
+          "client_id": "601890245278-mbvbp5670hgpfsp8iknq1npr5p9bb0jt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gumbo.english",
+            "certificate_hash": "7988cbe402329442c1781c0bde183da4c46a5e4f"
+          }
+        },
+        {
+          "client_id": "601890245278-pu9rjcl2tia2h82a5ktgd9mndgr9101q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gumbo.english",
+            "certificate_hash": "06e45fba12d87e3471302bff31025110fde7fd15"
+          }
+        },
+        {
+          "client_id": "601890245278-s64noqsmnn62gg8afu8sbofdep9m4rnf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gumbo.english",
+            "certificate_hash": "20649b21217cd0934602b556e5d6e5ecc76a2191"
+          }
+        },
+        {
+          "client_id": "601890245278-tgja9b5g58oih85addm5ntptiuoobu7g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gumbo.english",
+            "certificate_hash": "4f08fb171c178bcc1f5bffdc4ef520456af3f407"
+          }
+        },
+        {
+          "client_id": "601890245278-jbg05oftf76pprvmu52jq1gdjmmjfnbl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1gSOHfjXGaqxANRtX53tbXoAxje_KbBk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "601890245278-jbg05oftf76pprvmu52jq1gdjmmjfnbl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

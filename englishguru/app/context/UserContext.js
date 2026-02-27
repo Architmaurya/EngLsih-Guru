@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const defaultUser = {
-  userName: 'Anjali Sharma',
-  phoneNumber: '+91 98765 43210',
+  userName: '',
+  phoneNumber: '',
   age: '',
   profileImageUri: null,
+  id: null,
+  email: '',
+  token: null,
+  isOnboardingComplete: false,
+  isSubscribed: false,
 };
 
 const UserContext = createContext(null);
@@ -20,7 +25,11 @@ export function UserProvider({ children }) {
     setUserState((prev) => ({ ...defaultUser, ...prev, ...newUser }));
   }, []);
 
-  const value = { user, updateUser, setUser };
+  const clearUser = useCallback(() => {
+    setUserState({ ...defaultUser });
+  }, []);
+
+  const value = { user, updateUser, setUser, clearUser };
 
   return (
     <UserContext.Provider value={value}>

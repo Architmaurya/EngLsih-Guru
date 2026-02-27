@@ -1,7 +1,18 @@
-import React from 'react';
-import { Image, Platform, Pressable, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useUser } from '../context/UserContext';
+import { loginWithGoogle } from '../services/auth/authService';
+import { configureGoogleSignIn } from '../services/auth/googleSignIn';
 
 const logoShadow = Platform.select({
   ios: {
@@ -17,6 +28,46 @@ const logoShadow = Platform.select({
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { setUser } = useUser();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
+
+  const handleGooglePress = async () => {
+    setLoading(true);
+    console.log('[HomeScreen] Google sign-in started');
+    try {
+      const { user: userData, token } = await loginWithGoogle();
+      console.log('[HomeScreen] Google sign-in success', { userId: userData?.id, name: userData?.userName || userData?.name });
+      setUser({
+        id: userData.id,
+        userName: userData.userName || userData.name,
+        phoneNumber: userData.phoneNumber || '',
+        age: userData.age || '',
+        profileImageUri: userData.profileImageUri,
+        email: userData.email,
+        token,
+        isOnboardingComplete: userData.isOnboardingComplete,
+        isSubscribed: userData.isSubscribed,
+      });
+      if (userData.isOnboardingComplete) {
+        navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
+      } else {
+        navigation.navigate('FillInfo');
+      }
+    } catch (err) {
+      const message = err?.message || 'Sign in failed. Please try again.';
+      console.error('[HomeScreen] Google sign-in error:', message, err);
+      if (message !== 'Sign in was cancelled') {
+        Alert.alert('Sign in failed', message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <LinearGradient
       colors={['#FFF5F6', '#FEE2E7']}
@@ -60,20 +111,28 @@ export default function HomeScreen() {
           भारत की महिलाओं के लिए ख़ास बनाया गया।
         </Text>
 
-        {/* Google Button - button color #FF48A7, body 18, Open Sans */}
-        <Pressable
-          onPress={() => navigation.navigate('FillInfo')}
-          className="mt-10 h-14 w-[90%] flex-row items-center justify-center gap-3 rounded-xl bg-white  shadow-md active:opacity-90"
+        {/* Google Button - TouchableOpacity so account picker opens reliably (like Jeevansathi) */}
+        <TouchableOpacity
+          onPress={handleGooglePress}
+          disabled={loading}
+          activeOpacity={0.8}
+          className="mt-10 h-14 w-[90%] flex-row items-center justify-center gap-3 rounded-xl bg-white shadow-md"
         >
-          <Image
-            source={require('../../assets/google.png')}
-            className="h-5 w-5"
-            resizeMode="contain"
-          />
-          <Text className="font-openSans text-body font-bold text-black">
-            Continue with Google
-          </Text>
-        </Pressable>
+          {loading ? (
+            <ActivityIndicator size="small" color="#9A1A8F" />
+          ) : (
+            <>
+              <Image
+                source={require('../../assets/google.png')}
+                className="h-5 w-5"
+                resizeMode="contain"
+              />
+              <Text className="font-openSans text-body font-bold text-black">
+                Continue with Google
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
         </View>
       </View>
     </LinearGradient>

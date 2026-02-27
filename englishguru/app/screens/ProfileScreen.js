@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useUser } from '../context/UserContext';
+import { logout } from '../services/auth/authService';
 import MenuRow from '../components/MenuRow';
 import SecondaryButton from '../components/SecondaryButton';
 import ConfirmModal from '../components/ConfirmModal';
@@ -18,7 +19,7 @@ const MENU_ITEMS = [
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { user } = useUser();
+  const { user, clearUser } = useUser();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const userName = user.userName || 'Anjali Sharma';
   const phoneNumber = user.phoneNumber || '+91 98765 43210';
@@ -35,8 +36,10 @@ export default function ProfileScreen() {
   const openLogoutModal = () => setShowLogoutModal(true);
   const closeLogoutModal = () => setShowLogoutModal(false);
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
     setShowLogoutModal(false);
+    await logout();
+    clearUser();
     let root = navigation;
     while (root.getParent()) root = root.getParent();
     root.dispatch(
