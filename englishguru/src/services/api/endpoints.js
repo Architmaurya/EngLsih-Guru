@@ -2,3 +2,6 @@
 export const AUTH_GOOGLE = '/auth/android/google';
 export const AUTH_LOGOUT = '/auth/android/logout';
 export const AUTH_ME = '/auth/me';
+
+/** Onboarding - PUT /api/onboarding (Bearer + X-Package-ID) */
+export const ONBOARDING = '/onboarding';

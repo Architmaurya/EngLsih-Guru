@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import HomeScreen from '../screens/auth/HomeScreen/HomeScreen';
 import FillInfoScreen from '../screens/onboarding/FillInfoScreen/FillInfoScreen';
 import MainTabs from './MainTabs';
+import { useUser } from '../context/UserContext';
 import { hydrateAuth } from '../store/authSlice';
 import { selectAuth } from '../store';
 
@@ -37,12 +38,20 @@ function AppStack() {
 export default function RootNavigator() {
   const dispatch = useDispatch();
   const auth = useSelector(selectAuth);
+  const { setUser } = useUser();
 
   useEffect(() => {
     if (auth.status === 'idle') {
       dispatch(hydrateAuth());
     }
   }, [auth.status, dispatch]);
+
+  // Sync UserContext from Redux when auth is hydrated from storage (e.g. after app restart)
+  useEffect(() => {
+    if (auth.status === 'ready' && auth.user) {
+      setUser(auth.user);
+    }
+  }, [auth.status, auth.user, setUser]);
 
   if (auth.status === 'idle' || auth.status === 'loading') {
     return null;

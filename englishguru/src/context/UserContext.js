@@ -4,6 +4,8 @@ const defaultUser = {
   userName: '',
   phoneNumber: '',
   age: '',
+  class: null, // student class 1-9 (English Guru)
+  parentAge: null, // 18-80 (English Guru)
   profileImageUri: null,
   id: null,
   email: '',

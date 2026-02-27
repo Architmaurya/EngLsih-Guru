@@ -41,9 +41,12 @@ const authSlice = createSlice({
       state.user = null;
       state.status = 'ready';
     },
-    markOnboardingComplete(state) {
+    markOnboardingComplete(state, action) {
       state.hasCompletedOnboarding = true;
-      if (state.user) {
+      const updates = action.payload;
+      if (state.user && updates) {
+        state.user = { ...state.user, ...updates, isOnboardingComplete: true };
+      } else if (state.user) {
         state.user = { ...state.user, isOnboardingComplete: true };
       }
     },

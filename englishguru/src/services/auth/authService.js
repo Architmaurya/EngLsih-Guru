@@ -46,21 +46,29 @@ export async function loginWithGoogle() {
     isSubscribed: !!subscription?.active,
   };
 
+  console.log('[authService] token', token);
   await secureStorage.setAccessToken(token);
   await secureStorage.setUserData(userData);
+  console.log('[authService] Token and user stored in secure storage for future API calls (Bearer sent by apiClient)');
 
   return { user: userData, token };
 }
 
 /**
- * Logout: call backend logout, sign out from Google, clear local storage.
+ * Logout: call backend POST /api/auth/android/logout (Bearer + X-Package-ID), then sign out from Google and clear local storage.
+ * Backend: Private; no body. Client discards token after this.
  */
 export async function logout() {
+  console.log('[authService] Logout: calling backend', AUTH_LOGOUT);
   try {
-    await api.post(AUTH_LOGOUT, {});
-  } catch (e) {}
+    await api.post(AUTH_LOGOUT);
+    console.log('[authService] Backend logout success');
+  } catch (e) {
+    console.log('[authService] Backend logout failed (will clear local anyway)', e?.message ?? e);
+  }
   await performGoogleSignOut();
   await secureStorage.clearAll();
+  console.log('[authService] Local token and user data cleared');
 }
 
 /**
@@ -71,5 +79,6 @@ export async function getStoredAuth() {
     secureStorage.getUserData(),
     secureStorage.getAccessToken(),
   ]);
+  console.log('[authService] getStoredAuth:', token ? 'token present (will be used by apiClient)' : 'no token');
   return { user, token };
 }
