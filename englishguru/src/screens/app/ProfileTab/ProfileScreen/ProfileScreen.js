@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import Icon from 'react-native-vector-icons/Feather';
 import { useUser } from '../../../../context/UserContext';
+import { useUserStats } from '../../../../hooks/useUserStats';
 import { logout } from '../../../../services/auth/authService';
 import MenuRow from '../../../../components/MenuRow/MenuRow';
 import SecondaryButton from '../../../../components/SecondaryButton/SecondaryButton';
@@ -23,6 +24,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const { user, clearUser } = useUser();
+  const { streakDays, totalPoints } = useUserStats();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const userName = user.userName || 'Anjali Sharma';
   const phoneNumber = user.phoneNumber || '+91 98765 43210';
@@ -89,6 +91,17 @@ export default function ProfileScreen() {
           <Text className="font-hindi mt-1 text-rest text-black">
             {phoneNumber}
           </Text>
+        </View>
+
+        <View className="mb-6 flex-row gap-3">
+          <View className="flex-1 items-center rounded-xl border border-gray-200 bg-gray-50 py-4">
+            <Text className="font-hindi text-rest font-semibold text-gray-500">स्ट्रीक</Text>
+            <Text className="font-hindi mt-1 text-heading font-bold text-gray-900">{streakDays} दिन</Text>
+          </View>
+          <View className="flex-1 items-center rounded-xl border border-gray-200 bg-gray-50 py-4">
+            <Text className="font-hindi text-rest font-semibold text-gray-500">कुल पॉइंट्स</Text>
+            <Text className="font-hindi mt-1 text-heading font-bold text-gray-900">{totalPoints}</Text>
+          </View>
         </View>
 
         <View className="gap-3">

@@ -1,34 +1,25 @@
-import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { buttonShadow } from '../../../../theme/shadows';
+import { getMCQsByTopic, getMCQs, getMCQ, submitMCQ } from '../../../../services/mcqs/mcqsService';
 
 const PINK = '#EC4899';
 
-const SAMPLE_QUESTIONS = [
-  {
-    id: '1',
-    question: '"Good Morning" का हिंदी अर्थ क्या है?',
-    options: [
-      { id: 'a', text: 'शुभ प्रभात', correct: true },
-      { id: 'b', text: 'शुभ रात्रि', correct: false },
-      { id: 'c', text: 'नमस्ते', correct: false },
-      { id: 'd', text: 'शुभ संध्या', correct: false },
-    ],
-  },
-  {
-    id: '2',
-    question: '"Good Night" का हिंदी अर्थ क्या है?',
-    options: [
-      { id: 'a', text: 'शुभ प्रभात', correct: false },
-      { id: 'b', text: 'शुभ रात्रि', correct: true },
-      { id: 'c', text: 'नमस्ते', correct: false },
-      { id: 'd', text: 'शुभ संध्या', correct: false },
-    ],
-  },
-];
+function mapMCQToQuestions(mcq) {
+  const qs = mcq?.questions || [];
+  return qs.map((q, qi) => ({
+    id: String(qi),
+    question: q.questionText || '',
+    options: (q.options || []).map((opt, oi) => ({
+      id: String(oi),
+      text: opt.text || '',
+      correct: undefined,
+    })),
+  }));
+}
 
 export default function LessonPracticeScreen() {
   const insets = useSafeAreaInsets();
@@ -36,10 +27,57 @@ export default function LessonPracticeScreen() {
   const route = useRoute();
   const { lesson, course, videoCompletedOnce = false } = route.params || {};
 
-  const [questions] = useState(SAMPLE_QUESTIONS);
+  const [questions, setQuestions] = useState([]);
+  const [mcqId, setMcqId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
   const [answers, setAnswers] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!lesson?.id) {
+      setError('कोई लेसन नहीं चुना गया');
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        let mcqList = await getMCQsByTopic(lesson.id);
+        if (cancelled) return;
+        if (!mcqList?.length) {
+          mcqList = await getMCQs({ limit: 20 });
+          if (cancelled) return;
+        }
+        const firstMcq = mcqList?.[0];
+        if (firstMcq?._id) {
+          const mcq = await getMCQ(firstMcq._id);
+          if (cancelled) return;
+          const mapped = mapMCQToQuestions(mcq);
+          if (mapped.length > 0) {
+            setQuestions(mapped);
+            setMcqId(mcq._id);
+          } else {
+            setError('इस टॉपिक के लिए अभी कोई प्रश्न उपलब्ध नहीं हैं');
+          }
+        } else {
+          setError('इस टॉपिक के लिए अभी कोई प्रश्न उपलब्ध नहीं हैं');
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.log('[LessonPracticeScreen] fetch questions error', e?.message);
+          setError(e?.message || 'प्रश्न लोड नहीं हो सके');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [lesson?.id]);
 
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
@@ -51,26 +89,67 @@ export default function LessonPracticeScreen() {
 
   const handleSelectOption = (optionId) => setSelectedOptionId(optionId);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!hasSelection) return;
     if (isLastQuestion) {
       const allAnswers = [...answers, selectedOptionId];
-      const correctCount = questions.filter((q, i) => {
-        const correctOpt = q.options.find((o) => o.correct);
-        return correctOpt && allAnswers[i] === correctOpt.id;
-      }).length;
-      navigation.replace('LessonComplete', {
-        lesson,
-        course,
-        correctCount,
-        videoCompletedOnce,
-      });
-      return;
+      if (mcqId) {
+        setSubmitLoading(true);
+        try {
+          const submitPayload = {
+            answers: allAnswers.map((optionId, questionIndex) => ({
+              questionIndex,
+              selectedOption: parseInt(optionId, 10),
+              timeSpent: 0,
+            })),
+          };
+          const result = await submitMCQ(mcqId, submitPayload);
+          const correctCount = result?.correctAnswers ?? 0;
+          navigation.replace('LessonComplete', {
+            lesson,
+            course,
+            correctCount,
+            videoCompletedOnce,
+          });
+        } catch (e) {
+          console.log('[LessonPracticeScreen] submit MCQ error', e?.message);
+          setError(e?.message || 'Submit failed');
+        } finally {
+          setSubmitLoading(false);
+        }
+        return;
+      }
     }
     setAnswers((a) => [...a, selectedOptionId]);
     setCurrentIndex((i) => i + 1);
     setSelectedOptionId(null);
   };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center" style={{ paddingTop: insets.top }}>
+        <ActivityIndicator size="large" color={PINK} />
+        <Text className="font-hindi mt-3 text-body text-gray-600">प्रश्न लोड हो रहे हैं...</Text>
+      </View>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <View className="flex-1 bg-white px-4 justify-center" style={{ paddingTop: insets.top }}>
+        <Text className="font-hindi text-center text-body text-gray-600">
+          {error || 'इस टॉपिक के लिए अभी कोई प्रश्न उपलब्ध नहीं हैं'}
+        </Text>
+        <Pressable
+          onPress={handleClose}
+          className="mt-6 self-center rounded-xl bg-button px-6 py-3"
+          style={buttonShadow}
+        >
+          <Text className="font-hindi text-body font-bold text-white">वापस जाएं</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -80,6 +159,7 @@ export default function LessonPracticeScreen() {
             onPress={handleClose}
             hitSlop={12}
             className="h-10 w-10 items-start justify-center"
+            disabled={submitLoading}
           >
             <Icon name="x" size={24} color="#374151" />
           </Pressable>
@@ -95,6 +175,10 @@ export default function LessonPracticeScreen() {
             {currentIndex + 1}/{totalQuestions}
           </Text>
         </View>
+
+        {error ? (
+          <Text className="font-hindi mb-2 text-rest text-amber-600">{error}</Text>
+        ) : null}
 
         <ScrollView
           className="flex-1"
@@ -151,19 +235,23 @@ export default function LessonPracticeScreen() {
       >
         <Pressable
           onPress={handleNext}
-          disabled={!hasSelection}
+          disabled={!hasSelection || submitLoading}
           className={`items-center justify-center rounded-xl py-4 ${
-            hasSelection ? 'bg-button' : 'bg-gray-300'
+            hasSelection && !submitLoading ? 'bg-button' : 'bg-gray-300'
           }`}
-          style={hasSelection ? buttonShadow : undefined}
+          style={hasSelection && !submitLoading ? buttonShadow : undefined}
         >
-          <Text
-            className={`font-hindi text-body font-bold ${
-              hasSelection ? 'text-white' : 'text-gray-400'
-            }`}
-          >
-            {isLastQuestion ? 'पूर्ण करें' : 'अगला प्रश्न (Next Question)'}
-          </Text>
+          {submitLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text
+              className={`font-hindi text-body font-bold ${
+                hasSelection ? 'text-white' : 'text-gray-400'
+              }`}
+            >
+              {isLastQuestion ? 'पूर्ण करें' : 'अगला प्रश्न (Next Question)'}
+            </Text>
+          )}
         </Pressable>
       </View>
     </View>

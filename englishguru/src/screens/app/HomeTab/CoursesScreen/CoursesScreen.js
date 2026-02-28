@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -10,8 +11,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useUser } from '../../../../context/UserContext';
 import { cardShadowStrong, styles, CARD_IMAGE_HEIGHT } from './CoursesScreen.styles';
-import { courses } from '../../../../data/courses';
+import { getAssetImageUrl } from '../../../../config/env';
+import { courses as staticCourses } from '../../../../data/courses';
+import { useUserStats } from '../../../../hooks/useUserStats';
+import { getCategories } from '../../../../services/categories/categoriesService';
+import { getModulesByClass } from '../../../../services/modules/modulesService';
 
 function getProgressPercent(course) {
   if (!course.lessons || course.lessons.length === 0) return 0;
@@ -33,7 +39,7 @@ function CourseCard({ course, unlocked, onRestart, onContinue, onPressLocked }) 
       >
         {course.image != null ? (
           <Image
-            source={course.image}
+            source={typeof course.image === 'number' ? course.image : { uri: course.image?.uri || course.image }}
             style={styles.cardImage}
             resizeMode="cover"
           />
@@ -110,11 +116,105 @@ function CourseCard({ course, unlocked, onRestart, onContinue, onPressLocked }) 
   );
 }
 
+function mapCategoryToCourse(cat) {
+  const id = cat._id || cat.id;
+  const name = cat.name || '';
+  const rawImage = cat.thumbnail || cat.icon;
+  const imageUrl = getAssetImageUrl(rawImage);
+  if (name && imageUrl) {
+    console.log(`[CoursesScreen] Image URL for "${name}" → open in Chrome:`, imageUrl);
+  } else if (name && rawImage) {
+    console.log(`[CoursesScreen] Raw thumbnail/icon for "${name}":`, rawImage, '→ resolved URL:', imageUrl);
+  } else if (name) {
+    console.log(`[CoursesScreen] No thumbnail/icon for "${name}"`);
+  }
+  return {
+    id,
+    titleHi: name,
+    titleEn: name,
+    image: imageUrl ? { uri: imageUrl } : null,
+    lessons: [],
+    source: 'api',
+    unlocked: cat.hasAccess !== false,
+  };
+}
+
+function mapModuleToCourse(mod) {
+  const id = mod._id || mod.id;
+  const title = mod.title || '';
+  const imageUrl = getAssetImageUrl(mod.thumbnail);
+  return {
+    id,
+    titleHi: title,
+    titleEn: title,
+    image: imageUrl ? { uri: imageUrl } : null,
+    lessons: [],
+    source: 'module',
+    unlocked: mod.hasAccess !== false,
+  };
+}
+
 export default function CoursesScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const userName = route.params?.userName ?? 'आरती';
+  const { user } = useUser();
+  const userName = (user?.userName || route.params?.userName) ?? 'आरती';
+  const userClass = user?.class != null ? user.class : 1;
+
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [useClassModules, setUseClassModules] = useState(false);
+  const { streakDays, totalPoints } = useUserStats();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      console.log('[CoursesScreen] load started', { userClass });
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('[CoursesScreen] fetching categories (limit 20)');
+        const { data: categoriesData } = await getCategories({ limit: 20 });
+        if (cancelled) return;
+        console.log('[CoursesScreen] categories response', { count: categoriesData?.length, ids: categoriesData?.map((c) => c._id || c.id) });
+        if (categoriesData?.length > 0) {
+          const mapped = categoriesData.map(mapCategoryToCourse);
+          console.log('[CoursesScreen] using categories as courses', { count: mapped.length, titles: mapped.map((c) => c.titleHi) });
+          setCourses(mapped);
+          setUseClassModules(false);
+          return;
+        }
+        console.log('[CoursesScreen] no categories, fetching modules by class', { userClass });
+        const { data: modulesData } = await getModulesByClass(userClass, { limit: 20 });
+        if (cancelled) return;
+        console.log('[CoursesScreen] modules response', { count: modulesData?.length, class: userClass });
+        if (modulesData?.length > 0) {
+          const mapped = modulesData.map(mapModuleToCourse);
+          console.log('[CoursesScreen] using modules as courses', { count: mapped.length, titles: mapped.map((c) => c.titleHi) });
+          setCourses(mapped);
+          setUseClassModules(true);
+          return;
+        }
+        console.log('[CoursesScreen] no API data, using static courses', { staticCount: staticCourses.length });
+        setCourses(staticCourses);
+      } catch (e) {
+        if (!cancelled) {
+          console.log('[CoursesScreen] load error', { message: e?.message, stack: e?.stack });
+          setError(e?.message);
+          setCourses(staticCourses);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          console.log('[CoursesScreen] load finished');
+        }
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [userClass]);
 
   const openCourseDetail = (course) => {
     navigation.navigate('CourseDetail', { course });
@@ -154,21 +254,25 @@ export default function CoursesScreen() {
             className="flex-1 items-center rounded-2xl bg-white py-5"
             style={cardShadowStrong}
           >
-          <View className="flex-row items-center gap-2">
-          <Text className="mb-3 mt-2 text-4xl">🔥</Text>
-          <Text className="mb-1 font-hindi text-heading text-button">स्ट्रीक</Text>
-          </View>
-            <Text className="font-hindi text-heading font-bold text-gray-900">5 दिन</Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="mb-3 mt-2 text-4xl">🔥</Text>
+              <Text className="mb-1 font-hindi text-heading text-button">स्ट्रीक</Text>
+            </View>
+            <Text className="font-hindi text-heading font-bold text-gray-900">
+              {streakDays} दिन
+            </Text>
           </View>
           <View
             className="flex-1 items-center rounded-2xl bg-white py-5"
             style={cardShadowStrong}
           >
-          <View className="flex-row items-center gap-2">
-          <Text className="mb-3 mt-2 text-4xl">🥇</Text>
-          <Text className="mb-1 font-hindi text-heading text-button">कुल पॉइंट्स</Text>
-          </View>
-            <Text className="font-hindi text-heading font-bold text-gray-900">120</Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="mb-3 mt-2 text-4xl">🥇</Text>
+              <Text className="mb-1 font-hindi text-heading text-button">कुल पॉइंट्स</Text>
+            </View>
+            <Text className="font-hindi text-heading font-bold text-gray-900">
+              {totalPoints}
+            </Text>
           </View>
         </View>
 
@@ -179,6 +283,17 @@ export default function CoursesScreen() {
         </View>
 
         <View className="px-4">
+          {loading ? (
+            <View className="items-center py-8">
+              <ActivityIndicator size="large" color="#FF48A7" />
+              <Text className="mt-3 font-hindi text-rest text-gray-600">कोर्स लोड हो रहे हैं...</Text>
+            </View>
+          ) : error ? (
+            <View className="py-4">
+              <Text className="font-openSans text-rest text-gray-500 text-center">{error}</Text>
+              <Text className="mt-2 font-hindi text-rest text-gray-500 text-center">नीचे डिफ़ॉल्ट कोर्स दिखाए जा रहे हैं।</Text>
+            </View>
+          ) : null}
           {courses.map((course) => (
             <CourseCard
               key={course.id}

@@ -13,6 +13,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { wasVideoPointsAwarded, setVideoPointsAwarded } from '../../../../utils/videoPointsStore';
+import { updateUserStats } from '../../../../services/users/userStatsService';
+import { recordProgress } from '../../../../services/progress/progressService';
+import { recordVideoView, recordVideoProgress } from '../../../../services/videos/videosService';
+
+const isMongoId = (id) => typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
 
 const PINK = '#EC4899';
 const LIGHT_PINK_BORDER = '#F9A8D4';
@@ -56,6 +61,7 @@ export default function LessonScreen() {
 
   const videoRef = useRef(null);
   const fullscreenVideoRef = useRef(null);
+  const durationRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -111,11 +117,29 @@ export default function LessonScreen() {
       setVideoPointsAwarded(lesson.id);
     }
     setShowCompletionModal(true);
+
+    if (isMongoId(lesson.id)) {
+      const timeSpent = Math.round(durationRef.current || duration || 0);
+      console.log('[LessonScreen] Video ended – recording earn (stats + progress)', { contentId: lesson.id, timeSpent });
+      updateUserStats('video_watched', { contentId: lesson.id, contentType: 'video', timeSpent }).catch(() => {});
+      recordProgress({
+        contentId: lesson.id,
+        contentType: 'video',
+        progressPercentage: 100,
+        timeSpent,
+        status: 'completed',
+      }).catch(() => {});
+      if (lesson.videoId && isMongoId(lesson.videoId)) {
+        recordVideoView(lesson.videoId).catch(() => {});
+        recordVideoProgress(lesson.videoId, { progress: 100, completed: true, duration: timeSpent }).catch(() => {});
+      }
+    }
   };
 
   const handleVideoLoad = (e) => {
     const payload = e?.nativeEvent ?? e;
     const d = payload?.duration ?? 0;
+    durationRef.current = d;
     setDuration(d);
     if (exitFullscreenSeekTo != null && videoRef.current) {
       videoRef.current.seek(exitFullscreenSeekTo);

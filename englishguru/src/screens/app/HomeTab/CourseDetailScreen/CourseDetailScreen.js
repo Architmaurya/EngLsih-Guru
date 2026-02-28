@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -11,6 +12,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { cardShadowStrong } from '../../../../theme/shadows';
+import { getAssetImageUrl } from '../../../../config/env';
+import { getCategoryComplete } from '../../../../services/categories/categoriesService';
+import { getLearningModule } from '../../../../services/learningModules/learningModulesService';
 
 const HEADER_IMAGE_HEIGHT = 240;
 const PINK = '#FF48A7';
@@ -108,23 +112,112 @@ function LessonCard({ lesson, index, unlocked, completed, selected, onPress }) {
   );
 }
 
+function topicToLesson(topic, index) {
+  const unlocked = topic.hasAccess !== false;
+  return {
+    id: topic._id || topic.id,
+    title: topic.title || topic.name || '',
+    titleEn: topic.title || topic.name || '',
+    unlocked,
+    completed: false,
+  };
+}
+
+function contentItemsToLessons(content) {
+  if (!Array.isArray(content)) return [];
+  return content.map((item, index) => {
+    const title = item.contentData?.title || item.title || item.contentType || 'Lesson';
+    return {
+      id: item.contentId || item._id || String(index),
+      title,
+      titleEn: title,
+      unlocked: item.hasAccess !== false,
+      completed: false,
+    };
+  });
+}
+
 export default function CourseDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const course = route.params?.course;
+  const courseParam = route.params?.course;
+
+  const [resolvedCourse, setResolvedCourse] = useState(courseParam?.source ? null : courseParam);
+  const [detailLoading, setDetailLoading] = useState(!!(courseParam?.source && courseParam?.id));
+  const [detailError, setDetailError] = useState(null);
+
+  useEffect(() => {
+    if (!courseParam?.source || !courseParam?.id) return;
+    let cancelled = false;
+    async function fetchDetail() {
+      console.log('[CourseDetailScreen] fetchDetail started', { source: courseParam.source, id: courseParam.id, title: courseParam.titleHi });
+      setDetailLoading(true);
+      setDetailError(null);
+      try {
+        if (courseParam.source === 'api') {
+          console.log('[CourseDetailScreen] fetching category complete', courseParam.id);
+          const complete = await getCategoryComplete(courseParam.id);
+          if (cancelled) return;
+          const topics = complete?.topics || [];
+          const lessons = topics.map((t) => topicToLesson(t));
+          console.log('[CourseDetailScreen] category complete loaded', { categoryName: complete?.category?.name, topicsCount: topics.length, lessonsCount: lessons.length, topicTitles: topics.map((t) => t.title) });
+          const categoryImageUrl = getAssetImageUrl(complete?.category?.thumbnail || complete?.category?.icon);
+          setResolvedCourse({
+            ...courseParam,
+            titleHi: complete?.category?.name ?? courseParam.titleHi,
+            titleEn: complete?.category?.name ?? courseParam.titleEn,
+            image: categoryImageUrl ? { uri: categoryImageUrl } : courseParam.image,
+            lessons,
+          });
+        } else if (courseParam.source === 'module') {
+          console.log('[CourseDetailScreen] fetching learning module', courseParam.id);
+          const mod = await getLearningModule(courseParam.id);
+          if (cancelled) return;
+          const content = mod?.populatedContent || mod?.content || [];
+          const lessons = contentItemsToLessons(content);
+          console.log('[CourseDetailScreen] learning module loaded', { moduleTitle: mod?.title, contentCount: content.length, lessonsCount: lessons.length });
+          const moduleImageUrl = getAssetImageUrl(mod?.thumbnail);
+          setResolvedCourse({
+            ...courseParam,
+            titleHi: mod?.title ?? courseParam.titleHi,
+            titleEn: mod?.title ?? courseParam.titleEn,
+            image: moduleImageUrl ? { uri: moduleImageUrl } : courseParam.image,
+            lessons,
+          });
+        } else {
+          console.log('[CourseDetailScreen] no fetch, using courseParam as-is');
+          setResolvedCourse(courseParam);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.log('[CourseDetailScreen] fetchDetail error', { message: e?.message, id: courseParam.id, source: courseParam.source });
+          setDetailError(e?.message);
+          setResolvedCourse({ ...courseParam, lessons: courseParam.lessons || [] });
+        }
+      } finally {
+        if (!cancelled) {
+          setDetailLoading(false);
+          console.log('[CourseDetailScreen] fetchDetail finished');
+        }
+      }
+    }
+    fetchDetail();
+    return () => { cancelled = true; };
+  }, [courseParam?.id, courseParam?.source]);
 
   const defaultSelectedIndex = useMemo(() => {
-    const lessons = course?.lessons || [];
+    const c = resolvedCourse || courseParam;
+    const lessons = c?.lessons || [];
     const firstIncomplete = lessons.findIndex((l) => l.unlocked && !l.completed);
     if (firstIncomplete >= 0) return firstIncomplete;
     const firstUnlocked = lessons.findIndex((l) => l.unlocked);
     return firstUnlocked >= 0 ? firstUnlocked : 0;
-  }, [course?.lessons]);
+  }, [resolvedCourse?.lessons, courseParam?.lessons]);
 
   const [selectedLessonIndex, setSelectedLessonIndex] = useState(defaultSelectedIndex);
 
-  if (!course) {
+  if (!courseParam) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <Text className="font-openSans text-body text-gray-600">No course selected.</Text>
@@ -135,6 +228,16 @@ export default function CourseDetailScreen() {
     );
   }
 
+  if (detailLoading && !resolvedCourse) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white" style={{ paddingTop: insets.top }}>
+        <ActivityIndicator size="large" color="#FF48A7" />
+        <Text className="mt-3 font-hindi text-rest text-gray-600">कोर्स लोड हो रहा है...</Text>
+      </View>
+    );
+  }
+
+  const course = resolvedCourse || courseParam;
   const totalMinutes = course.lessons?.length ? course.lessons.length * 5 : 0;
 
   const handleBack = () => navigation.goBack();
@@ -159,7 +262,7 @@ export default function CourseDetailScreen() {
         <View style={{ height: HEADER_IMAGE_HEIGHT, width: '100%', position: 'relative' }}>
           {course.image && (
             <Image
-              source={course.image}
+              source={typeof course.image === 'number' ? course.image : { uri: course.image?.uri || course.image }}
               style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]}
               resizeMode="cover"
             />

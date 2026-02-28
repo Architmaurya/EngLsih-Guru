@@ -1,19 +1,40 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useUserStats } from '../../../../hooks/useUserStats';
+import { updateUserStats } from '../../../../services/users/userStatsService';
+import { recordProgress } from '../../../../services/progress/progressService';
 import { cardShadow } from '../../../../theme/shadows';
 import PrimaryButton from '../../../../components/PrimaryButton/PrimaryButton';
 import SecondaryButton from '../../../../components/SecondaryButton/SecondaryButton';
 
 const GREEN = '#22C55E';
+const isMongoId = (id) => typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
 
 export default function LessonCompleteScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute();
+  const { totalPoints } = useUserStats();
   const { lesson, course, correctCount = 0, videoCompletedOnce = false } = route.params || {};
+  const earnedRecordedRef = useRef(false);
+
+  useEffect(() => {
+    if (!lesson?.id || !isMongoId(lesson.id) || earnedRecordedRef.current) return;
+    earnedRecordedRef.current = true;
+    const score = typeof correctCount === 'number' ? correctCount : 0;
+    console.log('[LessonCompleteScreen] Questions completed – recording earn (stats + progress)', { contentId: lesson.id, score });
+    updateUserStats('test_passed', { contentId: lesson.id, contentType: 'questionnaire', score }).catch(() => {});
+    recordProgress({
+      contentId: lesson.id,
+      contentType: 'questionnaire',
+      progressPercentage: 100,
+      status: 'completed',
+      timeSpent: 0,
+    }).catch(() => {});
+  }, [lesson?.id, correctCount]);
 
   const totalQuestions = 2;
   const scoreOutOf10 = totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 10);
@@ -129,6 +150,11 @@ export default function LessonCompleteScreen() {
             <View className="h-2 overflow-hidden rounded bg-gray-100">
               <View className="absolute left-0 top-0 bottom-0 w-full rounded bg-button" />
             </View>
+          </View>
+
+          <View className="mt-4 pt-4 border-t border-gray-100 flex-row items-center justify-between">
+            <Text className="font-hindi text-rest text-gray-600">कुल अंक (अब तक)</Text>
+            <Text className="font-hindi text-body font-bold text-button">{totalPoints}</Text>
           </View>
         </View>
 
