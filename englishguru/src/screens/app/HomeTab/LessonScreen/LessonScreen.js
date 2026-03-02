@@ -1,5 +1,6 @@
 import React, { Component, useRef, useState, useEffect } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Image,
   Modal,
@@ -15,7 +16,8 @@ import Icon from 'react-native-vector-icons/Feather';
 import { wasVideoPointsAwarded, setVideoPointsAwarded } from '../../../../utils/videoPointsStore';
 import { updateUserStats } from '../../../../services/users/userStatsService';
 import { recordProgress } from '../../../../services/progress/progressService';
-import { recordVideoView, recordVideoProgress } from '../../../../services/videos/videosService';
+import { getVideo, getVideoStream, recordVideoView, recordVideoProgress } from '../../../../services/videos/videosService';
+import { getTopicVideos } from '../../../../services/topics/topicsService';
 
 const isMongoId = (id) => typeof id === 'string' && /^[a-fA-F0-9]{24}$/.test(id);
 
@@ -23,8 +25,6 @@ const PINK = '#EC4899';
 const LIGHT_PINK_BORDER = '#F9A8D4';
 
 const VIDEO_ASPECT_RATIO = 16 / 9;
-
-const FALLBACK_VIDEO = require('../../../../assets/lesson/V.mp4');
 
 function formatTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
@@ -78,6 +78,66 @@ export default function LessonScreen() {
   const HIDE_CONTROLS_AFTER_MS = 3000;
   const FADE_DURATION_MS = 600;
 
+  const [videoLoadPhase, setVideoLoadPhase] = useState(course?.source === 'api' ? 'loading' : 'ready');
+  const [resolvedVideoUrl, setResolvedVideoUrl] = useState(null);
+  const [resolvedVideoId, setResolvedVideoId] = useState(null);
+  const [videoLoadError, setVideoLoadError] = useState(null);
+
+  useEffect(() => {
+    if (course?.source !== 'api' || !lesson?.id) {
+      setVideoLoadPhase('ready');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setVideoLoadPhase('loading');
+      setVideoLoadError(null);
+      try {
+        const { data: videos } = await getTopicVideos(lesson.id);
+        if (cancelled || !videos?.length) {
+          if (!cancelled) {
+            setVideoLoadPhase(videos?.length === 0 ? 'error' : 'ready');
+            setVideoLoadError(videos?.length === 0 ? 'इस टॉपिक के लिए कोई वीडियो नहीं' : null);
+          }
+          return;
+        }
+        const first = videos[0];
+        const videoId = first._id || first.id;
+        if (!videoId) {
+          setVideoLoadPhase('ready');
+          return;
+        }
+        let streamUrl = first.streamUrl || first.url;
+        if (!streamUrl) {
+          try {
+            const videoData = await getVideo(videoId);
+            if (cancelled) return;
+            streamUrl = videoData?.streamUrl || videoData?.url;
+          } catch (_) {}
+          if (!streamUrl) {
+            const streamData = await getVideoStream(videoId);
+            if (cancelled) return;
+            streamUrl = streamData?.streamUrl || streamData?.url;
+          }
+        }
+        if (!cancelled && streamUrl) {
+          setResolvedVideoId(videoId);
+          setResolvedVideoUrl(streamUrl);
+          setVideoLoadPhase('ready');
+        } else if (!cancelled) {
+          setVideoLoadPhase('error');
+          setVideoLoadError('वीडियो स्ट्रीम लोड नहीं हो सका');
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setVideoLoadPhase('error');
+          setVideoLoadError(e?.message || 'वीडियो लोड नहीं हो सका');
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [course?.source, lesson?.id]);
+
   if (!lesson || !course) {
     return (
       <View className="flex-1 items-center justify-center bg-white" style={{ paddingTop: insets.top }}>
@@ -92,7 +152,12 @@ export default function LessonScreen() {
     );
   }
 
-  const videoSource = lesson.videoUrl ? { uri: lesson.videoUrl } : FALLBACK_VIDEO;
+  const videoSource = resolvedVideoUrl
+    ? { uri: resolvedVideoUrl }
+    : lesson.videoUrl
+      ? { uri: lesson.videoUrl }
+      : null;
+  const effectiveVideoId = resolvedVideoId || lesson.videoId;
   const title = lesson.titleEn
     ? `${lesson.title} (${lesson.titleEn})`
     : lesson.title;
@@ -129,9 +194,9 @@ export default function LessonScreen() {
         timeSpent,
         status: 'completed',
       }).catch(() => {});
-      if (lesson.videoId && isMongoId(lesson.videoId)) {
-        recordVideoView(lesson.videoId).catch(() => {});
-        recordVideoProgress(lesson.videoId, { progress: 100, completed: true, duration: timeSpent }).catch(() => {});
+      if (effectiveVideoId && isMongoId(effectiveVideoId)) {
+        recordVideoView(effectiveVideoId).catch(() => {});
+        recordVideoProgress(effectiveVideoId, { progress: 100, completed: true, duration: timeSpent }).catch(() => {});
       }
     }
   };
@@ -263,7 +328,21 @@ export default function LessonScreen() {
             backgroundColor: '#000',
           }}
         >
-          {!isPlaying || videoNativeError ? (
+          {videoLoadPhase === 'loading' ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+              <ActivityIndicator size="large" color={PINK} />
+              <Text className="mt-3 font-hindi text-rest text-white">वीडियो लोड हो रहा है...</Text>
+            </View>
+          ) : videoLoadPhase === 'error' || (videoLoadPhase === 'ready' && !videoSource) ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+              <Text className="font-hindi text-rest text-white text-center">
+                {videoLoadPhase === 'error' ? videoLoadError : 'इस पाठ के लिए कोई वीडियो नहीं'}
+              </Text>
+              <Pressable onPress={() => navigation.goBack()} className="mt-4 rounded-xl bg-button px-6 py-2">
+                <Text className="font-hindi text-body font-bold text-white">वापस जाएं</Text>
+              </Pressable>
+            </View>
+          ) : !isPlaying || videoNativeError ? (
             <>
               {course.image && (
                 <Image

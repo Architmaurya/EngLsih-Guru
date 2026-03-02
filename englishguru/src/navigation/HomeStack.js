@@ -18,7 +18,11 @@ export default function HomeStack() {
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="Lesson" component={LessonScreen} />
       <Stack.Screen name="LessonPractice" component={LessonPracticeScreen} />
-      <Stack.Screen name="LessonComplete" component={LessonCompleteScreen} />
+      <Stack.Screen
+        name="LessonComplete"
+        component={LessonCompleteScreen}
+        options={{ presentation: 'modal' }}
+      />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
     </Stack.Navigator>

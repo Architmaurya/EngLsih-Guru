@@ -5,6 +5,8 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { buttonShadow } from '../../../../theme/shadows';
 import { getMCQsByTopic, getMCQs, getMCQ, submitMCQ } from '../../../../services/mcqs/mcqsService';
+import { recordProgress } from '../../../../services/progress/progressService';
+import { updateUserStats } from '../../../../services/users/userStatsService';
 
 const PINK = '#EC4899';
 
@@ -105,6 +107,17 @@ export default function LessonPracticeScreen() {
           };
           const result = await submitMCQ(mcqId, submitPayload);
           const correctCount = result?.correctAnswers ?? 0;
+          recordProgress({
+            contentId: lesson.id,
+            contentType: 'mcq',
+            progressPercentage: 100,
+            status: 'completed',
+          }).catch(() => {});
+          updateUserStats('test_passed', {
+            contentId: lesson.id,
+            contentType: 'mcq',
+            score: result?.score,
+          }).catch(() => {});
           navigation.replace('LessonComplete', {
             lesson,
             course,

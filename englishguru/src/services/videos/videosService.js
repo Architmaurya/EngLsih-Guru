@@ -1,5 +1,25 @@
 import api from '../api/apiClient';
-import { videoView, videoProgress } from '../api/endpoints';
+import { videoById, videoStream, videoView, videoProgress } from '../api/endpoints';
+
+/**
+ * GET /api/videos/:id - video details (streamUrl etc.).
+ */
+export async function getVideo(videoId) {
+  const res = await api.get(videoById(videoId));
+  const data = res?.data;
+  if (!data?.success) throw new Error(data?.message || 'Failed to fetch video');
+  return data.data || {};
+}
+
+/**
+ * GET /api/videos/:id/stream - stream URL for playback.
+ */
+export async function getVideoStream(videoId) {
+  const res = await api.get(videoStream(videoId));
+  const data = res?.data;
+  if (!data?.success) throw new Error(data?.message || 'Failed to fetch stream');
+  return data.data || {};
+}
 
 /**
  * POST /api/videos/:id/view - record video view (optionalAuth).

@@ -2,7 +2,6 @@
  * Course and lesson data for English Guru.
  * Course 1: first 3 lessons unlocked, rest locked.
  * Other courses: if course is unlocked, all lessons unlocked; if locked, all lessons locked.
- * Images: assets/course/c1.png to c8.png
  */
 function withUnlockFirstN(lessons, n) {
   return lessons.map((l, i) => ({ ...l, unlocked: i < n }));
@@ -18,7 +17,7 @@ export const courses = [
     unlocked: true,
     titleHi: 'रोज़ाना की बातचीत',
     titleEn: 'Daily Conversations',
-    image: require('../assets/course/c1.png'),
+    image: null,
     lessons: withUnlockFirstN([
       { id: '1-1', title: 'अभिवादन के सामान्य वाक्य', titleEn: 'Greetings & Hello', completed: true },
       { id: '1-2', title: 'परिवार से जुड़े शब्द', titleEn: 'Family Members', completed: false },
@@ -37,7 +36,7 @@ export const courses = [
     unlocked: false,
     titleHi: 'बच्चों का होमवर्क',
     titleEn: "Kids' Homework",
-    image: require('../assets/course/c2.png'),
+    image: null,
     lessons: withUnlock([
       { id: '2-1', title: 'स्कूल की ज़रूरी वस्तुएँ | Part-1', completed: false },
       { id: '2-2', title: 'स्कूल की ज़रूरी वस्तुएँ | Part-2', completed: false },
@@ -55,7 +54,7 @@ export const courses = [
     unlocked: false,
     titleHi: 'रसोई और घर',
     titleEn: 'Kitchen and Household',
-    image: require('../assets/course/c3.png'),
+    image: null,
     lessons: withUnlock([
       { id: '3-1', title: 'मसाले और दालों के नाम | Part-1', completed: false },
       { id: '3-2', title: 'मसाले और दालों के नाम | Part-2', completed: false },
@@ -74,7 +73,7 @@ export const courses = [
     unlocked: false,
     titleHi: 'काम और रोज़गार',
     titleEn: 'Work and Employment',
-    image: require('../assets/course/c4.png'),
+    image: null,
     lessons: withUnlock([
       { id: '4-1', title: 'विभिन्न प्रकार की नौकरियाँ', completed: false },
       { id: '4-2', title: 'नौकरी ढूँढने की बातचीत | Part-1', completed: false },
@@ -91,7 +90,7 @@ export const courses = [
     unlocked: false,
     titleHi: 'प्रकृति को समझना',
     titleEn: 'Understanding Nature',
-    image: require('../assets/course/c5.png'),
+    image: null,
     lessons: withUnlock([
       { id: '5-1', title: 'जानवर और उनके बच्चे', completed: false },
       { id: '5-2', title: 'जल में रहने वाले जानवर', completed: false },
@@ -107,7 +106,7 @@ export const courses = [
     unlocked: false,
     titleHi: 'सामान्य ज्ञान',
     titleEn: 'General Knowledge',
-    image: require('../assets/course/c6.png'),
+    image: null,
     lessons: withUnlock([
       { id: '6-1', title: 'एयरपोर्ट की ज़रूरी बातचीत', completed: false },
       { id: '6-2', title: 'मानव शरीर के अंग', completed: false },
@@ -122,7 +121,7 @@ export const courses = [
     unlocked: false,
     titleHi: 'एडवांस्ड इंग्लिश',
     titleEn: 'Advanced English',
-    image: require('../assets/course/c7.png'),
+    image: null,
     lessons: withUnlock([
       { id: '7-1', title: 'पैसे की समझ | Part-1', completed: false },
       { id: '7-2', title: 'पैसे की समझ | Part-2', completed: false },
@@ -142,7 +141,7 @@ export const courses = [
     unlocked: false,
     titleHi: 'रैंडम कम्युनिकेशन',
     titleEn: 'Random Communications',
-    image: require('../assets/course/c8.png'),
+    image: null,
     lessons: withUnlock([
       { id: '8-1', title: 'बोलचाल की ज़रूरी बातें | Part-1', completed: false },
       { id: '8-2', title: 'बोलचाल की ज़रूरी बातें | Part-2', completed: false },

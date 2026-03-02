@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Text,
   TouchableOpacity,
   View,
@@ -70,13 +69,7 @@ export default function HomeScreen() {
     >
       <View className="flex-1 pt-8">
         <View className="flex-1 items-center justify-center px-4">
-        <View className="mb-5 h-32 w-32 items-center justify-center rounded-full bg-[#FFEAF8]" style={logoShadow}>
-          <Image
-            source={require('../../../assets/EnglishGurulogo.png')}
-            className="h-18 w-18 "
-            resizeMode="contain"
-          />
-        </View>
+        <View className="mb-5 h-32 w-32 items-center justify-center rounded-full bg-[#FFEAF8]" style={logoShadow} />
 
         <Text className="mt-3 font-openSans text-heading font-bold text-[#9A1A8F]">
           English Guru
@@ -90,11 +83,7 @@ export default function HomeScreen() {
           अब इंग्लिश सीखना हुआ आसान।
         </Text>
 
-        <Image
-          source={require('../../../assets/English.png')}
-          className="my-6 h-44 w-44"
-          resizeMode="contain"
-        />
+        <View className="my-6 h-44 w-44" />
 
         <Text className="mt-2 px-10 text-center font-hindi text-body text-gray-700">
           भारत की महिलाओं के लिए ख़ास बनाया गया।
@@ -110,11 +99,6 @@ export default function HomeScreen() {
             <ActivityIndicator size="small" color="#9A1A8F" />
           ) : (
             <>
-              <Image
-                source={require('../../../assets/google.png')}
-                className="h-5 w-5"
-                resizeMode="contain"
-              />
               <Text className="font-openSans text-body font-bold text-black">
                 Continue with Google
               </Text>

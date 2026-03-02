@@ -2,7 +2,6 @@ import api from '../api/apiClient';
 import {
   CATEGORIES,
   categoryById,
-  categoryComplete,
   categoryTopics,
 } from '../api/endpoints';
 
@@ -48,31 +47,6 @@ export async function getCategory(id) {
     topicsCount: category?.topics?.length,
   });
   return category;
-}
-
-/**
- * GET /api/categories/:id/complete - category with topics, videos, stats
- */
-export async function getCategoryComplete(id) {
-  console.log('[categoriesService] getCategoryComplete request', { id, endpoint: categoryComplete(id) });
-  const res = await api.get(categoryComplete(id));
-  const data = res?.data;
-  if (!data?.success) {
-    console.log('[categoriesService] getCategoryComplete failed', { id, status: res?.status, message: data?.message });
-    throw new Error(data?.message || 'Category not found');
-  }
-  const result = data.data;
-  const topics = result?.topics || [];
-  const videos = result?.videos || [];
-  console.log('[categoriesService] getCategoryComplete success', {
-    categoryId: result?.category?._id || result?.category?.id,
-    categoryName: result?.category?.name,
-    topicsCount: topics.length,
-    videosCount: videos.length,
-    stats: result?.stats,
-    topicTitles: topics.map((t) => t.title),
-  });
-  return result;
 }
 
 /**

@@ -13,7 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import { cardShadowStrong } from '../../../../theme/shadows';
 import { getAssetImageUrl } from '../../../../config/env';
-import { getCategoryComplete } from '../../../../services/categories/categoriesService';
+import { getCategory } from '../../../../services/categories/categoriesService';
 import { getLearningModule } from '../../../../services/learningModules/learningModulesService';
 
 const HEADER_IMAGE_HEIGHT = 240;
@@ -156,17 +156,17 @@ export default function CourseDetailScreen() {
       setDetailError(null);
       try {
         if (courseParam.source === 'api') {
-          console.log('[CourseDetailScreen] fetching category complete', courseParam.id);
-          const complete = await getCategoryComplete(courseParam.id);
+          console.log('[CourseDetailScreen] fetching category', courseParam.id);
+          const category = await getCategory(courseParam.id);
           if (cancelled) return;
-          const topics = complete?.topics || [];
+          const topics = category?.topics || [];
           const lessons = topics.map((t) => topicToLesson(t));
-          console.log('[CourseDetailScreen] category complete loaded', { categoryName: complete?.category?.name, topicsCount: topics.length, lessonsCount: lessons.length, topicTitles: topics.map((t) => t.title) });
-          const categoryImageUrl = getAssetImageUrl(complete?.category?.thumbnail || complete?.category?.icon);
+          console.log('[CourseDetailScreen] category loaded', { categoryName: category?.name, topicsCount: topics.length, lessonsCount: lessons.length, topicTitles: topics.map((t) => t.title) });
+          const categoryImageUrl = getAssetImageUrl(category?.thumbnail || category?.icon);
           setResolvedCourse({
             ...courseParam,
-            titleHi: complete?.category?.name ?? courseParam.titleHi,
-            titleEn: complete?.category?.name ?? courseParam.titleEn,
+            titleHi: category?.name ?? courseParam.titleHi,
+            titleEn: category?.name ?? courseParam.titleEn,
             image: categoryImageUrl ? { uri: categoryImageUrl } : courseParam.image,
             lessons,
           });

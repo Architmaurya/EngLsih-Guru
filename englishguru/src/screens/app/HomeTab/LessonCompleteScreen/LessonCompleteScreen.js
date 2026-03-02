@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { BackHandler, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -56,14 +56,36 @@ export default function LessonCompleteScreen() {
     }
   };
 
-  const handleBackToCourse = () => {
-    navigation.navigate('CourseDetail', { course });
+  const goToCourseDetail = () => {
+    navigation.reset({
+      index: 1,
+      routes: [
+        { name: 'CoursesList' },
+        { name: 'CourseDetail', params: { course } },
+      ],
+    });
   };
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      goToCourseDetail();
+      return true;
+    });
+    return () => sub.remove();
+  }, [course]);
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <Pressable
+        onPress={goToCourseDetail}
+        className="absolute left-4 top-4 z-10 h-10 w-10 items-center justify-center rounded-full bg-gray-100"
+        style={{ top: insets.top + 8 }}
+      >
+        <Icon name="x" size={24} color="#374151" />
+      </Pressable>
       <ScrollView
         contentContainerStyle={{
+          paddingTop: 48,
           paddingHorizontal: 20,
           paddingBottom: 24 + insets.bottom,
         }}
@@ -166,7 +188,7 @@ export default function LessonCompleteScreen() {
             style={cardShadow}
             className="mb-3"
           />
-          <SecondaryButton onPress={handleBackToCourse} label="कोर्स पर वापस जाएं" rounded="14" />
+          <SecondaryButton onPress={goToCourseDetail} label="कोर्स पर वापस जाएं" rounded="14" />
         </View>
       </ScrollView>
     </View>
