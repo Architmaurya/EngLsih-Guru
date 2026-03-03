@@ -121,13 +121,6 @@ function mapCategoryToCourse(cat) {
   const name = cat.name || '';
   const rawImage = cat.thumbnail || cat.icon;
   const imageUrl = getAssetImageUrl(rawImage);
-  if (name && imageUrl) {
-    console.log(`[CoursesScreen] Image URL for "${name}" → open in Chrome:`, imageUrl);
-  } else if (name && rawImage) {
-    console.log(`[CoursesScreen] Raw thumbnail/icon for "${name}":`, rawImage, '→ resolved URL:', imageUrl);
-  } else if (name) {
-    console.log(`[CoursesScreen] No thumbnail/icon for "${name}"`);
-  }
   return {
     id,
     titleHi: name,
@@ -171,44 +164,34 @@ export default function CoursesScreen() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      console.log('[CoursesScreen] load started', { userClass });
       setLoading(true);
       setError(null);
       try {
-        console.log('[CoursesScreen] fetching categories (limit 20)');
         const { data: categoriesData } = await getCategories({ limit: 20 });
         if (cancelled) return;
-        console.log('[CoursesScreen] categories response', { count: categoriesData?.length, ids: categoriesData?.map((c) => c._id || c.id) });
         if (categoriesData?.length > 0) {
           const mapped = categoriesData.map(mapCategoryToCourse);
-          console.log('[CoursesScreen] using categories as courses', { count: mapped.length, titles: mapped.map((c) => c.titleHi) });
           setCourses(mapped);
           setUseClassModules(false);
           return;
         }
-        console.log('[CoursesScreen] no categories, fetching modules by class', { userClass });
         const { data: modulesData } = await getModulesByClass(userClass, { limit: 20 });
         if (cancelled) return;
-        console.log('[CoursesScreen] modules response', { count: modulesData?.length, class: userClass });
         if (modulesData?.length > 0) {
           const mapped = modulesData.map(mapModuleToCourse);
-          console.log('[CoursesScreen] using modules as courses', { count: mapped.length, titles: mapped.map((c) => c.titleHi) });
           setCourses(mapped);
           setUseClassModules(true);
           return;
         }
-        console.log('[CoursesScreen] no API data, using static courses', { staticCount: staticCourses.length });
         setCourses(staticCourses);
       } catch (e) {
         if (!cancelled) {
-          console.log('[CoursesScreen] load error', { message: e?.message, stack: e?.stack });
           setError(e?.message);
           setCourses(staticCourses);
         }
       } finally {
         if (!cancelled) {
           setLoading(false);
-          console.log('[CoursesScreen] load finished');
         }
       }
     }
