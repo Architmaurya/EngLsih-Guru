@@ -10,13 +10,10 @@ export async function recordProgress(payload) {
   const { contentId, contentType, progressPercentage = 0, timeSpent = 0, status = 'inProgress', metadata } = payload;
   const body = { contentId, contentType, progressPercentage, timeSpent, status };
   if (metadata != null) body.metadata = metadata;
-  console.log('[progressService] recordProgress (earn)', { contentId, contentType, progressPercentage, timeSpent, status });
   const res = await api.post(PROGRESS_RECORD, body);
   const data = res?.data;
   if (!data?.success) {
-    console.log('[progressService] recordProgress failed', { status: res?.status, message: data?.message });
     throw new Error(data?.message || 'Failed to record progress');
   }
-  console.log('[progressService] recordProgress success');
   return data.data || {};
 }

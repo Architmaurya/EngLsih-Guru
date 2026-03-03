@@ -25,7 +25,6 @@ export default function LessonCompleteScreen() {
     if (!lesson?.id || !isMongoId(lesson.id) || earnedRecordedRef.current) return;
     earnedRecordedRef.current = true;
     const score = typeof correctCount === 'number' ? correctCount : 0;
-    console.log('[LessonCompleteScreen] Questions completed – recording earn (stats + progress)', { contentId: lesson.id, score });
     updateUserStats('test_passed', { contentId: lesson.id, contentType: 'questionnaire', score }).catch(() => {});
     recordProgress({
       contentId: lesson.id,

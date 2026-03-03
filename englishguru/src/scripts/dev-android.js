@@ -111,7 +111,6 @@ function tryFreePort(port) {
   const pids = tryGetListeningPids(port);
   if (pids.length === 0) return true;
 
-  console.log(`[dev:android] Port ${port} is in use (PID(s): ${pids.join(', ')}). Trying to stop them...`);
   for (const pid of pids) {
     try {
       execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
@@ -128,7 +127,6 @@ function startMetro(port) {
     process.env.METRO_RESET_CACHE === '1' ||
     process.env.RESET_METRO_CACHE === '1';
 
-  console.log(`[dev:android] Starting Metro on port ${port}...`);
   const args = ['react-native', 'start', '--port', String(port)];
   if (resetCache) args.push('--reset-cache');
 
@@ -218,16 +216,11 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`[dev:android] Running Android app (port ${port})...`);
-
   const deviceId = tryGetPreferredAndroidDeviceId();
   const androidArgs = ['react-native', 'run-android', '--port', String(port)];
   if (deviceId) {
-    console.log(`[dev:android] Using device: ${deviceId}`);
     // RN CLI renamed `--deviceId` to `--device` (keep up to date to avoid warnings).
     androidArgs.push('--device', deviceId);
-  } else {
-    console.log('[dev:android] No Android device detected via adb yet (will let CLI handle it).');
   }
 
   android = runWithCapture('npx', androidArgs);
@@ -252,8 +245,6 @@ async function main() {
     process.exit(code ?? 1);
   }
 
-  console.log(`[dev:android] Android app launched. Metro is still running on port ${port}.`);
-  console.log('[dev:android] Press Ctrl+C to stop Metro and exit.');
   await new Promise(() => {});
 }
 

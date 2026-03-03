@@ -151,17 +151,14 @@ export default function CourseDetailScreen() {
     if (!courseParam?.source || !courseParam?.id) return;
     let cancelled = false;
     async function fetchDetail() {
-      console.log('[CourseDetailScreen] fetchDetail started', { source: courseParam.source, id: courseParam.id, title: courseParam.titleHi });
       setDetailLoading(true);
       setDetailError(null);
       try {
         if (courseParam.source === 'api') {
-          console.log('[CourseDetailScreen] fetching category', courseParam.id);
           const category = await getCategory(courseParam.id);
           if (cancelled) return;
           const topics = category?.topics || [];
           const lessons = topics.map((t) => topicToLesson(t));
-          console.log('[CourseDetailScreen] category loaded', { categoryName: category?.name, topicsCount: topics.length, lessonsCount: lessons.length, topicTitles: topics.map((t) => t.title) });
           const categoryImageUrl = getAssetImageUrl(category?.thumbnail || category?.icon);
           setResolvedCourse({
             ...courseParam,
@@ -171,12 +168,10 @@ export default function CourseDetailScreen() {
             lessons,
           });
         } else if (courseParam.source === 'module') {
-          console.log('[CourseDetailScreen] fetching learning module', courseParam.id);
           const mod = await getLearningModule(courseParam.id);
           if (cancelled) return;
           const content = mod?.populatedContent || mod?.content || [];
           const lessons = contentItemsToLessons(content);
-          console.log('[CourseDetailScreen] learning module loaded', { moduleTitle: mod?.title, contentCount: content.length, lessonsCount: lessons.length });
           const moduleImageUrl = getAssetImageUrl(mod?.thumbnail);
           setResolvedCourse({
             ...courseParam,
@@ -186,19 +181,16 @@ export default function CourseDetailScreen() {
             lessons,
           });
         } else {
-          console.log('[CourseDetailScreen] no fetch, using courseParam as-is');
           setResolvedCourse(courseParam);
         }
       } catch (e) {
         if (!cancelled) {
-          console.log('[CourseDetailScreen] fetchDetail error', { message: e?.message, id: courseParam.id, source: courseParam.source });
           setDetailError(e?.message);
           setResolvedCourse({ ...courseParam, lessons: courseParam.lessons || [] });
         }
       } finally {
         if (!cancelled) {
           setDetailLoading(false);
-          console.log('[CourseDetailScreen] fetchDetail finished');
         }
       }
     }

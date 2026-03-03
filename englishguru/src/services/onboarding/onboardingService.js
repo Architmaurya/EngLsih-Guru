@@ -9,7 +9,6 @@ import { ONBOARDING } from '../api/endpoints';
  * @returns {Promise<{ id, name, email, number, class, parentAge, isOnboardingComplete }>}
  */
 export async function completeOnboarding(payload) {
-  console.log('[onboardingService] PUT', ONBOARDING, payload);
   const res = await api.put(ONBOARDING, payload);
   const data = res?.data;
   const result = data?.data ?? data;
@@ -20,6 +19,5 @@ export async function completeOnboarding(payload) {
     throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
 
-  console.log('[onboardingService] Backend onboarding success', result?.isOnboardingComplete);
   return result;
 }

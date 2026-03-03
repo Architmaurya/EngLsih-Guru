@@ -1,5 +1,5 @@
 import api from '../api/apiClient';
-import { AUTH_GOOGLE, AUTH_LOGOUT } from '../api/endpoints';
+import { AUTH_GOOGLE, AUTH_LOGOUT, AUTH_DELETE_ACCOUNT } from '../api/endpoints';
 import { secureStorage } from '../storage/secureStorage';
 import { performGoogleSignIn, performGoogleSignOut } from './googleSignIn';
 
@@ -11,7 +11,6 @@ import { performGoogleSignIn, performGoogleSignOut } from './googleSignIn';
 export async function loginWithGoogle() {
   const { idToken } = await performGoogleSignIn();
 
-  console.log('[authService] Sending idToken to backend', AUTH_GOOGLE);
   const res = await api.post(AUTH_GOOGLE, { idToken });
   const data = res?.data;
   const payload = data?.data ?? data;
@@ -21,7 +20,6 @@ export async function loginWithGoogle() {
     console.error('[authService] Backend login failed', { status: res?.status, data, message: msg });
     throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
-  console.log('[authService] Backend login success', { userId: payload?.user?.id ?? payload?.user?._id });
 
   const token = payload?.token ?? data?.token;
   const backendUser = payload?.user ?? data?.user ?? {};
@@ -46,10 +44,8 @@ export async function loginWithGoogle() {
     isSubscribed: !!subscription?.active,
   };
 
-  console.log('[authService] token', token);
   await secureStorage.setAccessToken(token);
   await secureStorage.setUserData(userData);
-  console.log('[authService] Token and user stored in secure storage for future API calls (Bearer sent by apiClient)');
 
   return { user: userData, token };
 }
@@ -59,16 +55,40 @@ export async function loginWithGoogle() {
  * Backend: Private; no body. Client discards token after this.
  */
 export async function logout() {
-  console.log('[authService] Logout: calling backend', AUTH_LOGOUT);
   try {
     await api.post(AUTH_LOGOUT);
-    console.log('[authService] Backend logout success');
   } catch (e) {
-    console.log('[authService] Backend logout failed (will clear local anyway)', e?.message ?? e);
+    // ignore
   }
   await performGoogleSignOut();
   await secureStorage.clearAll();
-  console.log('[authService] Local token and user data cleared');
+}
+
+/**
+ * Delete account: call backend DELETE /api/auth/android/account (Bearer + X-Package-ID), then sign out and clear local storage.
+ */
+export async function deleteAccount() {
+  const token = await secureStorage.getAccessToken();
+  if (!token) {
+    await performGoogleSignOut();
+    await secureStorage.clearAll();
+    return;
+  }
+  try {
+    await api.delete(AUTH_DELETE_ACCOUNT, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (e) {
+    const status = e?.response?.status;
+    const msg = e?.response?.data?.message || e?.message;
+    if (status === 401 && msg === 'Account is deactivated.') {
+      // continue to clear local
+    } else {
+      throw e;
+    }
+  }
+  await performGoogleSignOut();
+  await secureStorage.clearAll();
 }
 
 /**
@@ -79,6 +99,5 @@ export async function getStoredAuth() {
     secureStorage.getUserData(),
     secureStorage.getAccessToken(),
   ]);
-  console.log('[authService] getStoredAuth:', token ? 'token present (will be used by apiClient)' : 'no token');
   return { user, token };
 }

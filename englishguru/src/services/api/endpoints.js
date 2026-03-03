@@ -1,6 +1,7 @@
 /** Auth endpoints (learners-svc) - package com.gumbo.english */
 export const AUTH_GOOGLE = '/auth/android/google';
 export const AUTH_LOGOUT = '/auth/android/logout';
+export const AUTH_DELETE_ACCOUNT = '/auth/android/account';
 
 /** Onboarding - PUT /api/onboarding (Bearer + X-Package-ID) */
 export const ONBOARDING = '/onboarding';

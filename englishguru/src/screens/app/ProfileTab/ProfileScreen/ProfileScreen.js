@@ -6,7 +6,7 @@ import { useDispatch } from 'react-redux';
 import Icon from 'react-native-vector-icons/Feather';
 import { useUser } from '../../../../context/UserContext';
 import { useUserStats } from '../../../../hooks/useUserStats';
-import { logout } from '../../../../services/auth/authService';
+import { logout, deleteAccount } from '../../../../services/auth/authService';
 import MenuRow from '../../../../components/MenuRow/MenuRow';
 import SecondaryButton from '../../../../components/SecondaryButton/SecondaryButton';
 import ConfirmModal from '../../../../components/ConfirmModal/ConfirmModal';
@@ -26,6 +26,8 @@ export default function ProfileScreen() {
   const { user, clearUser } = useUser();
   const { streakDays, totalPoints } = useUserStats();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
   const userName = user.userName || 'Anjali Sharma';
   const phoneNumber = user.phoneNumber || '+91 98765 43210';
   const profileImageUri = user.profileImageUri;
@@ -46,7 +48,24 @@ export default function ProfileScreen() {
     await logout();
     clearUser();
     dispatch(logoutSucceeded());
-    // RootNavigator switches to AuthStack (Home screen) when isLoggedIn becomes false
+  };
+
+  const openDeleteAccountModal = () => setShowDeleteAccountModal(true);
+  const closeDeleteAccountModal = () => {
+    if (!deleteAccountLoading) setShowDeleteAccountModal(false);
+  };
+
+  const confirmDeleteAccount = async () => {
+    setDeleteAccountLoading(true);
+    try {
+      setShowDeleteAccountModal(false);
+      await deleteAccount();
+      clearUser();
+      dispatch(logoutSucceeded());
+    } catch (e) {
+      setDeleteAccountLoading(false);
+      // Optionally show error to user
+    }
   };
 
   return (
@@ -60,6 +79,7 @@ export default function ProfileScreen() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{
+          flexGrow: 1,
           paddingHorizontal: 20,
           paddingBottom: 24 + insets.bottom,
         }}
@@ -116,8 +136,9 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        <View className="mt-8">
+        <View className="mt-8 gap-3">
           <SecondaryButton onPress={openLogoutModal} label="Logout" />
+          <SecondaryButton onPress={openDeleteAccountModal} label="Delete Account" />
         </View>
       </ScrollView>
 
@@ -130,6 +151,17 @@ export default function ProfileScreen() {
         confirmLabel="Logout"
         onCancel={closeLogoutModal}
         onConfirm={confirmLogout}
+      />
+      <ConfirmModal
+        visible={showDeleteAccountModal}
+        onRequestClose={closeDeleteAccountModal}
+        title="Delete Account"
+        message="क्या आप अपना अकाउंट हमेशा के लिए डिलीट करना चाहती हैं? यह एक्शन वापस नहीं लिया जा सकता।"
+        cancelLabel="Cancel"
+        confirmLabel="Delete Account"
+        confirmLabelColor="#DC2626"
+        onCancel={closeDeleteAccountModal}
+        onConfirm={confirmDeleteAccount}
       />
     </View>
   );

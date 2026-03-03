@@ -71,7 +71,6 @@ export default function LessonPracticeScreen() {
         }
       } catch (e) {
         if (!cancelled) {
-          console.log('[LessonPracticeScreen] fetch questions error', e?.message);
           setError(e?.message || 'प्रश्न लोड नहीं हो सके');
         }
       } finally {
@@ -125,7 +124,6 @@ export default function LessonPracticeScreen() {
             videoCompletedOnce,
           });
         } catch (e) {
-          console.log('[LessonPracticeScreen] submit MCQ error', e?.message);
           setError(e?.message || 'Submit failed');
         } finally {
           setSubmitLoading(false);

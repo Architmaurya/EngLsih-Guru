@@ -185,7 +185,6 @@ export default function LessonScreen() {
 
     if (isMongoId(lesson.id)) {
       const timeSpent = Math.round(durationRef.current || duration || 0);
-      console.log('[LessonScreen] Video ended – recording earn (stats + progress)', { contentId: lesson.id, timeSpent });
       updateUserStats('video_watched', { contentId: lesson.id, contentType: 'video', timeSpent }).catch(() => {});
       recordProgress({
         contentId: lesson.id,

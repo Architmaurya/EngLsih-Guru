@@ -35,12 +35,10 @@ export async function performGoogleSignIn() {
 
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-  console.log('[googleSignIn] Opening account picker, webClientId:', config.google?.webClientId ? '***set***' : 'MISSING');
   let signInResult;
   try {
     await GoogleSignin.signOut();
     signInResult = await GoogleSignin.signIn();
-    console.log('[googleSignIn] signIn result:', signInResult ? 'got result' : 'null (cancelled)');
   } catch (nativeError) {
     console.error('[googleSignIn] Native sign-in error:', nativeError?.code, nativeError?.message);
     const code = nativeError?.code || nativeError?.error?.code;
@@ -81,7 +79,6 @@ export async function performGoogleSignIn() {
   }
 
   const user = signInResult?.data?.user ?? signInResult?.user ?? {};
-  console.log('[googleSignIn] Got idToken, email:', user?.email ?? 'n/a');
   return {
     idToken,
     user: {

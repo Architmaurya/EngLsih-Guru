@@ -27,10 +27,8 @@ export default function HomeScreen() {
 
   const handleGooglePress = async () => {
     setLoading(true);
-    console.log('[HomeScreen] Google sign-in started');
     try {
       const { user: userData, token } = await loginWithGoogle();
-      console.log('[HomeScreen] Google sign-in success', { userId: userData?.id, name: userData?.userName || userData?.name });
       setUser({
         id: userData.id,
         userName: userData.userName || userData.name,
